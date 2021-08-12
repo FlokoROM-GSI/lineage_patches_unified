@@ -1,7 +1,7 @@
-From 9a9baec3df926da5cf27c690590482e11172f821 Mon Sep 17 00:00:00 2001
+From 2b37e5ddbc451e312d6a4bcc36964d429e1342e3 Mon Sep 17 00:00:00 2001
 From: Victor Bo <bvoid@yandex.ru>
 Date: Wed, 3 Mar 2021 06:31:17 -0500
-Subject: [PATCH 3/4] Restore /sbin for Magisk compatibility
+Subject: [PATCH] Restore /sbin for Magisk compatibility
 
 Squash of:
 - Revert "Do not create /sbin"
@@ -30,7 +30,7 @@ index 0a534a2bd..81150a0fa 100644
  $(call add-clean-step, rm -rf $(PRODUCT_OUT)/product_services.img)
  $(call add-clean-step, rm -rf $(PRODUCT_OUT)/system/product_services)
 diff --git a/libcutils/fs_config.cpp b/libcutils/fs_config.cpp
-index 5805a4d19..b30707fc8 100644
+index 33a2d60be..55612de33 100644
 --- a/libcutils/fs_config.cpp
 +++ b/libcutils/fs_config.cpp
 @@ -80,6 +80,7 @@ static const struct fs_path_config android_dirs[] = {
@@ -40,8 +40,8 @@ index 5805a4d19..b30707fc8 100644
 +    { 00750, AID_ROOT,         AID_SHELL,        0, "sbin" },
      { 00777, AID_ROOT,         AID_ROOT,         0, "sdcard" },
      { 00751, AID_ROOT,         AID_SDCARD_R,     0, "storage" },
-     { 00751, AID_ROOT,         AID_SHELL,        0, "system/bin" },
-@@ -164,6 +165,7 @@ static const struct fs_path_config android_files[] = {
+     { 00755, AID_ROOT,         AID_ROOT,         0, "system/addon.d" },
+@@ -166,6 +167,7 @@ static const struct fs_path_config android_files[] = {
      { 00600, AID_ROOT,      AID_ROOT,      0, "system_ext/build.prop" },
      { 00444, AID_ROOT,      AID_ROOT,      0, system_ext_conf_dir + 1 },
      { 00444, AID_ROOT,      AID_ROOT,      0, system_ext_conf_file + 1 },
@@ -49,14 +49,14 @@ index 5805a4d19..b30707fc8 100644
      { 00755, AID_ROOT,      AID_SHELL,     0, "system/bin/crash_dump32" },
      { 00755, AID_ROOT,      AID_SHELL,     0, "system/bin/crash_dump64" },
      { 00755, AID_ROOT,      AID_SHELL,     0, "system/bin/debuggerd" },
-@@ -209,6 +211,7 @@ static const struct fs_path_config android_files[] = {
+@@ -212,6 +214,7 @@ static const struct fs_path_config android_files[] = {
      { 00750, AID_ROOT,      AID_SHELL,     0, "init*" },
      { 00755, AID_ROOT,      AID_SHELL,     0, "odm/bin/*" },
      { 00755, AID_ROOT,      AID_SHELL,     0, "product/bin/*" },
 +    { 00750, AID_ROOT,      AID_SHELL,     0, "sbin/*" },
      { 00755, AID_ROOT,      AID_SHELL,     0, "system/bin/*" },
+     { 00755, AID_ROOT,      AID_SHELL,     0, "system/etc/init.d/*" },
      { 00755, AID_ROOT,      AID_SHELL,     0, "system/xbin/*" },
-     { 00755, AID_ROOT,      AID_SHELL,     0, "system/apex/*/bin/*" },
 diff --git a/rootdir/Android.mk b/rootdir/Android.mk
 index 7d383f522..6d518dcb3 100644
 --- a/rootdir/Android.mk
@@ -82,6 +82,3 @@ index fdaaf1abe..72ba861a8 100644
      export BOOTCLASSPATH %BOOTCLASSPATH%
      export DEX2OATBOOTCLASSPATH %DEX2OATBOOTCLASSPATH%
      export SYSTEMSERVERCLASSPATH %SYSTEMSERVERCLASSPATH%
--- 
-2.25.1
-

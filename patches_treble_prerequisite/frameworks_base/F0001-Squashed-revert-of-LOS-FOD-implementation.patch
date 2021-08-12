@@ -1,9 +1,8 @@
-From cfc6cf10b64ef3ecba6586ed87dcf90d32918b4e Mon Sep 17 00:00:00 2001
-From: Andy CrossGate Yan <GeForce8800Ultra@gmail.com>
-Date: Tue, 13 Jul 2021 16:01:31 +0000
-Subject: [PATCH] Squashed revert of LOS FOD implementation
+From 00a280cca8bd07fca0b0c08378ecbea2f08b2dfd Mon Sep 17 00:00:00 2001
+From: AndroPlus <hosigumayuugi@gmail.com>
+Date: Sun, 25 Jul 2021 15:21:04 +0900
+Subject: [PATCH 1/1] Squashed revert of LOS FOD implementation
 
-Better than having an ever-growing string of revert commands?
 ---
  .../internal/statusbar/IStatusBar.aidl        |   6 -
  .../internal/statusbar/IStatusBarService.aidl |   6 -
@@ -13,40 +12,39 @@ Better than having an ever-growing string of revert commands?
  packages/SystemUI/Android.bp                  |   2 -
  packages/SystemUI/AndroidManifest.xml         |   1 -
  .../res-keyguard/values/lineage_dimens.xml    |  20 -
- .../res/drawable-nodpi/fod_icon_pressed.png   | Bin 108 -> 0 bytes
- .../res/drawable/fod_icon_default.xml         |  25 -
+ .../res/drawable/fod_icon_default.xml         |  26 -
  packages/SystemUI/res/values/config.xml       |   1 -
- .../SystemUI/res/values/lineage_config.xml    |   4 -
+ .../SystemUI/res/values/lineage_config.xml    |   3 -
  .../keyguard/KeyguardSecurityContainer.java   |  15 +-
  .../keyguard/KeyguardUpdateMonitor.java       |   9 +-
  .../AuthBiometricFingerprintView.java         |  13 -
- .../biometrics/AuthBiometricView.java         |  30 +-
- .../systemui/biometrics/FODCircleView.java    | 555 ------------------
- .../biometrics/FODCircleViewImpl.java         | 132 -----
+ .../biometrics/AuthBiometricView.java         |  27 +-
+ .../systemui/biometrics/FODCircleView.java    | 742 ------------------
+ .../biometrics/FODCircleViewImpl.java         | 174 ----
  .../biometrics/FODCircleViewImplCallback.java |  25 -
  .../systemui/dagger/SystemUIBinder.java       |   7 -
- .../keyguard/KeyguardViewMediator.java        |  10 +-
+ .../keyguard/KeyguardViewMediator.java        |  14 +-
  .../systemui/statusbar/CommandQueue.java      |  28 -
+ .../KeyguardIndicationController.java         |  52 --
  .../notification/ActivityLaunchAnimator.java  |  21 +-
- .../systemui/statusbar/phone/StatusBar.java   |  74 +--
+ .../systemui/statusbar/phone/StatusBar.java   |  74 +-
  .../phone/StatusBarKeyguardViewManager.java   |  11 +-
  .../phone/dagger/StatusBarPhoneModule.java    |   7 +-
  .../ActivityLaunchAnimatorTest.java           |   6 +-
  .../statusbar/phone/StatusBarTest.java        |   5 +-
  services/core/Android.bp                      |   1 -
  .../biometrics/BiometricServiceBase.java      |   2 +-
- .../fingerprint/FingerprintService.java       | 112 ----
+ .../fingerprint/FingerprintService.java       | 116 ---
  .../statusbar/StatusBarManagerService.java    |  22 -
- 32 files changed, 20 insertions(+), 1145 deletions(-)
+ 32 files changed, 20 insertions(+), 1431 deletions(-)
  delete mode 100644 packages/SystemUI/res-keyguard/values/lineage_dimens.xml
- delete mode 100644 packages/SystemUI/res/drawable-nodpi/fod_icon_pressed.png
  delete mode 100644 packages/SystemUI/res/drawable/fod_icon_default.xml
  delete mode 100644 packages/SystemUI/src/com/android/systemui/biometrics/FODCircleView.java
  delete mode 100644 packages/SystemUI/src/com/android/systemui/biometrics/FODCircleViewImpl.java
  delete mode 100644 packages/SystemUI/src/com/android/systemui/biometrics/FODCircleViewImplCallback.java
 
 diff --git a/core/java/com/android/internal/statusbar/IStatusBar.aidl b/core/java/com/android/internal/statusbar/IStatusBar.aidl
-index 44607f7f5fb..83b672e06b0 100644
+index 5f7cdcda696..2bdaac4fa1b 100644
 --- a/core/java/com/android/internal/statusbar/IStatusBar.aidl
 +++ b/core/java/com/android/internal/statusbar/IStatusBar.aidl
 @@ -228,12 +228,6 @@ oneway interface IStatusBar
@@ -63,7 +61,7 @@ index 44607f7f5fb..83b672e06b0 100644
       * Used to block or unblock usage of gestural navigation
       */
 diff --git a/core/java/com/android/internal/statusbar/IStatusBarService.aidl b/core/java/com/android/internal/statusbar/IStatusBarService.aidl
-index e9b0683db89..ca0eccdbc6e 100644
+index 8f95b474cbf..f3ca1d7f652 100644
 --- a/core/java/com/android/internal/statusbar/IStatusBarService.aidl
 +++ b/core/java/com/android/internal/statusbar/IStatusBarService.aidl
 @@ -148,12 +148,6 @@ interface IStatusBarService
@@ -80,10 +78,10 @@ index e9b0683db89..ca0eccdbc6e 100644
       * Starts the default assistant app.
       */
 diff --git a/data/etc/com.android.systemui.xml b/data/etc/com.android.systemui.xml
-index 7af1de6a6ca..06f1dae30cd 100644
+index 8fc8b4b13c0..e5ab2bbb7ac 100644
 --- a/data/etc/com.android.systemui.xml
 +++ b/data/etc/com.android.systemui.xml
-@@ -30,7 +30,6 @@
+@@ -32,7 +32,6 @@
          <permission name="android.permission.GET_APP_OPS_STATS"/>
          <permission name="android.permission.INTERACT_ACROSS_USERS"/>
          <permission name="android.permission.MANAGE_DEBUGGING"/>
@@ -155,7 +153,7 @@ index 28bcaf6c144..f2cef14b558 100644
      }
  }
 diff --git a/packages/SystemUI/Android.bp b/packages/SystemUI/Android.bp
-index c78630c05f0..84870f83ad2 100644
+index b5a6d44f8f6..ccc641d59aa 100644
 --- a/packages/SystemUI/Android.bp
 +++ b/packages/SystemUI/Android.bp
 @@ -71,7 +71,6 @@ android_library {
@@ -164,21 +162,21 @@ index c78630c05f0..84870f83ad2 100644
          "org.lineageos.platform.internal",
 -        "vendor.lineage.biometrics.fingerprint.inscreen-V1.0-java",
          "vendor.lineage.powershare-V1.0-java",
-     ],
-     manifest: "AndroidManifest.xml",
-@@ -146,7 +145,6 @@ android_library {
+         "airbnb-lottie",
+         "tensorflowlite_java",
+@@ -152,7 +151,6 @@ android_library {
          "dagger2-2.19",
          "jsr330",
          "org.lineageos.platform.internal",
 -        "vendor.lineage.biometrics.fingerprint.inscreen-V1.0-java",
          "vendor.lineage.powershare-V1.0-java",
+         "airbnb-lottie",
      ],
-     libs: [
 diff --git a/packages/SystemUI/AndroidManifest.xml b/packages/SystemUI/AndroidManifest.xml
-index 6bee19745c8..541a9cf7722 100644
+index a286e22f302..c7d91e5cd01 100644
 --- a/packages/SystemUI/AndroidManifest.xml
 +++ b/packages/SystemUI/AndroidManifest.xml
-@@ -137,7 +137,6 @@
+@@ -138,7 +138,6 @@
      <uses-permission android:name="android.permission.USE_FINGERPRINT" />
      <uses-permission android:name="android.permission.RESET_FINGERPRINT_LOCKOUT" />
      <uses-permission android:name="android.permission.MANAGE_BIOMETRIC" />
@@ -212,24 +210,12 @@ index bb6070c7199..00000000000
 -    <!-- The minimum bottom margin of the keyguard security container -->
 -    <dimen name="kg_security_container_min_bottom_margin">0dp</dimen>
 -</resources>
-diff --git a/packages/SystemUI/res/drawable-nodpi/fod_icon_pressed.png b/packages/SystemUI/res/drawable-nodpi/fod_icon_pressed.png
-deleted file mode 100644
-index 4102e28c1300b49323b50625d8cfaa73b006561f..0000000000000000000000000000000000000000
-GIT binary patch
-literal 0
-HcmV?d00001
-
-literal 108
-zcmeAS@N?(olHy`uVBq!ia0vp^j3CUx1|;Q0k8}bl$r9IylHmNblJdl&R0hYC{G?O`
-z&)mfH)S%SFl*+=BsWw1Ge4Z|jAr-fh5*U~o7?>FtSQ!{^cTT<plwt66^>bP0l+XkK
-D@OB!I
-
 diff --git a/packages/SystemUI/res/drawable/fod_icon_default.xml b/packages/SystemUI/res/drawable/fod_icon_default.xml
 deleted file mode 100644
-index 38e9d311128..00000000000
+index 693917bb79f..00000000000
 --- a/packages/SystemUI/res/drawable/fod_icon_default.xml
 +++ /dev/null
-@@ -1,25 +0,0 @@
+@@ -1,26 +0,0 @@
 -<?xml version="1.0" encoding="utf-8"?>
 -<!--
 -     Copyright (C) 2019 The LineageOS Project
@@ -247,16 +233,17 @@ index 38e9d311128..00000000000
 -     limitations under the License.
 --->
 -<vector xmlns:android="http://schemas.android.com/apk/res/android"
--    android:width="48dp"
--    android:height="48dp"
--    android:viewportWidth="24.0"
--    android:viewportHeight="24.0">
+-    android:width="120dp"
+-    android:height="120dp"
+-    android:viewportWidth="100"
+-    android:viewportHeight="100">
 -    <path
--        android:fillColor="#ffffff"
--        android:pathData="M17.81,4.47c-0.08,0 -0.16,-0.02 -0.23,-0.06C15.66,3.42 14,3 12.01,3c-1.98,0 -3.86,0.47 -5.57,1.41 -0.24,0.13 -0.54,0.04 -0.68,-0.2 -0.13,-0.24 -0.04,-0.55 0.2,-0.68C7.82,2.52 9.86,2 12.01,2c2.13,0 3.99,0.47 6.03,1.52 0.25,0.13 0.34,0.43 0.21,0.67 -0.09,0.18 -0.26,0.28 -0.44,0.28zM3.5,9.72c-0.1,0 -0.2,-0.03 -0.29,-0.09 -0.23,-0.16 -0.28,-0.47 -0.12,-0.7 0.99,-1.4 2.25,-2.5 3.75,-3.27C9.98,4.04 14,4.03 17.15,5.65c1.5,0.77 2.76,1.86 3.75,3.25 0.16,0.22 0.11,0.54 -0.12,0.7 -0.23,0.16 -0.54,0.11 -0.7,-0.12 -0.9,-1.26 -2.04,-2.25 -3.39,-2.94 -2.87,-1.47 -6.54,-1.47 -9.4,0.01 -1.36,0.7 -2.5,1.7 -3.4,2.96 -0.08,0.14 -0.23,0.21 -0.39,0.21zM9.75,21.79c-0.13,0 -0.26,-0.05 -0.35,-0.15 -0.87,-0.87 -1.34,-1.43 -2.01,-2.64 -0.69,-1.23 -1.05,-2.73 -1.05,-4.34 0,-2.97 2.54,-5.39 5.66,-5.39s5.66,2.42 5.66,5.39c0,0.28 -0.22,0.5 -0.5,0.5s-0.5,-0.22 -0.5,-0.5c0,-2.42 -2.09,-4.39 -4.66,-4.39 -2.57,0 -4.66,1.97 -4.66,4.39 0,1.44 0.32,2.77 0.93,3.85 0.64,1.15 1.08,1.64 1.85,2.42 0.19,0.2 0.19,0.51 0,0.71 -0.11,0.1 -0.24,0.15 -0.37,0.15zM16.92,19.94c-1.19,0 -2.24,-0.3 -3.1,-0.89 -1.49,-1.01 -2.38,-2.65 -2.38,-4.39 0,-0.28 0.22,-0.5 0.5,-0.5s0.5,0.22 0.5,0.5c0,1.41 0.72,2.74 1.94,3.56 0.71,0.48 1.54,0.71 2.54,0.71 0.24,0 0.64,-0.03 1.04,-0.1 0.27,-0.05 0.53,0.13 0.58,0.41 0.05,0.27 -0.13,0.53 -0.41,0.58 -0.57,0.11 -1.07,0.12 -1.21,0.12zM14.91,22c-0.04,0 -0.09,-0.01 -0.13,-0.02 -1.59,-0.44 -2.63,-1.03 -3.72,-2.1 -1.4,-1.39 -2.17,-3.24 -2.17,-5.22 0,-1.62 1.38,-2.94 3.08,-2.94 1.7,0 3.08,1.32 3.08,2.94 0,1.07 0.93,1.94 2.08,1.94s2.08,-0.87 2.08,-1.94c0,-3.77 -3.25,-6.83 -7.25,-6.83 -2.84,0 -5.44,1.58 -6.61,4.03 -0.39,0.81 -0.59,1.76 -0.59,2.8 0,0.78 0.07,2.01 0.67,3.61 0.1,0.26 -0.03,0.55 -0.29,0.64 -0.26,0.1 -0.55,-0.04 -0.64,-0.29 -0.49,-1.31 -0.73,-2.61 -0.73,-3.96 0,-1.2 0.23,-2.29 0.68,-3.24 1.33,-2.79 4.28,-4.6 7.51,-4.6 4.55,0 8.25,3.51 8.25,7.83 0,1.62 -1.38,2.94 -3.08,2.94s-3.08,-1.32 -3.08,-2.94c0,-1.07 -0.93,-1.94 -2.08,-1.94s-2.08,0.87 -2.08,1.94c0,1.71 0.66,3.31 1.87,4.51 0.95,0.94 1.86,1.46 3.27,1.85 0.27,0.07 0.42,0.35 0.35,0.61 -0.05,0.23 -0.26,0.38 -0.47,0.38z" />
+-        android:fillColor="#bfd9d9d9"
+-        android:fillType="evenOdd"
+-        android:pathData="M50,100C77.614,100 100,77.614 100,50C100,22.386 77.614,0 50,0C22.386,0 0,22.386 0,50C0,77.614 22.386,100 50,100ZM70.499,22.676C70.751,22.82 71.039,22.892 71.327,22.892C71.975,22.892 72.587,22.532 72.911,21.884C73.379,21.02 73.055,19.94 72.155,19.472C64.811,15.692 58.115,14 50.447,14C42.707,14 35.363,15.872 28.667,19.508C27.803,19.976 27.479,21.092 27.947,21.956C28.451,22.82 29.531,23.144 30.395,22.676C36.551,19.292 43.319,17.6 50.447,17.6C57.611,17.6 63.587,19.112 70.499,22.676ZM18.767,41.468C19.091,41.684 19.451,41.792 19.811,41.792C20.387,41.792 20.927,41.54 21.215,41.036C24.455,36.5 28.559,32.9 33.455,30.38C43.751,25.052 56.963,25.052 67.295,30.344C72.155,32.828 76.259,36.392 79.499,40.928C80.075,41.756 81.191,41.936 82.019,41.36C82.847,40.784 83.027,39.632 82.451,38.84C78.887,33.836 74.351,29.912 68.951,27.14C57.611,21.308 43.139,21.344 31.835,27.176C26.435,29.948 21.899,33.908 18.335,38.948C17.759,39.776 17.939,40.892 18.767,41.468ZM41.051,84.704C41.375,85.064 41.843,85.244 42.311,85.244C42.779,85.244 43.247,85.064 43.643,84.704C44.327,83.984 44.327,82.868 43.643,82.148C40.871,79.34 39.287,77.576 36.983,73.436C34.787,69.548 33.635,64.76 33.635,59.576C33.635,50.864 41.159,43.772 50.411,43.772C59.663,43.772 67.187,50.864 67.187,59.576C67.187,60.584 67.979,61.376 68.987,61.376C69.995,61.376 70.787,60.584 70.787,59.576C70.787,48.884 61.643,40.172 50.411,40.172C39.179,40.172 30.035,48.884 30.035,59.576C30.035,65.372 31.331,70.772 33.815,75.2C36.227,79.556 37.919,81.572 41.051,84.704ZM56.963,75.38C60.059,77.504 63.839,78.584 68.123,78.584C68.627,78.584 70.427,78.548 72.479,78.152C73.487,77.972 74.135,77.036 73.955,76.064C73.775,75.056 72.839,74.408 71.867,74.588C70.427,74.84 68.987,74.948 68.123,74.948C64.523,74.948 61.535,74.12 58.979,72.392C54.587,69.44 51.995,64.652 51.995,59.576C51.995,58.568 51.203,57.776 50.195,57.776C49.187,57.776 48.395,58.568 48.395,59.576C48.395,65.84 51.599,71.744 56.963,75.38ZM60.419,85.928C60.563,85.964 60.743,86 60.887,86C61.643,86 62.399,85.46 62.579,84.632C62.831,83.696 62.291,82.688 61.319,82.436C56.243,81.032 52.967,79.16 49.547,75.776C45.191,71.456 42.815,65.696 42.815,59.54C42.815,55.688 46.163,52.556 50.303,52.556C54.443,52.556 57.791,55.688 57.791,59.54C57.791,65.372 62.759,70.124 68.879,70.124C74.999,70.124 79.967,65.372 79.967,59.54C79.967,43.988 66.647,31.352 50.267,31.352C38.639,31.352 28.019,37.868 23.231,47.912C21.611,51.332 20.783,55.256 20.783,59.576C20.783,64.436 21.647,69.116 23.411,73.832C23.735,74.732 24.779,75.236 25.715,74.876C26.651,74.552 27.119,73.508 26.759,72.572C24.599,66.812 24.347,62.384 24.347,59.576C24.347,55.832 25.067,52.412 26.471,49.496C30.683,40.676 40.043,34.988 50.267,34.988C64.667,34.988 76.367,46.004 76.367,59.576C76.367,63.428 73.019,66.56 68.879,66.56C64.739,66.56 61.391,63.428 61.391,59.576C61.391,53.744 56.423,48.992 50.303,48.992C44.183,48.992 39.215,53.744 39.215,59.576C39.215,66.704 41.987,73.364 47.027,78.368C50.951,82.22 54.695,84.344 60.419,85.928Z" />
 -</vector>
 diff --git a/packages/SystemUI/res/values/config.xml b/packages/SystemUI/res/values/config.xml
-index 367fe72d4da..d86f3fa277f 100644
+index 2dea33cfe5c..ede929c2b64 100644
 --- a/packages/SystemUI/res/values/config.xml
 +++ b/packages/SystemUI/res/values/config.xml
 @@ -319,7 +319,6 @@
@@ -268,15 +255,14 @@ index 367fe72d4da..d86f3fa277f 100644
          <item>com.android.systemui.SizeCompatModeActivityController</item>
          <item>com.android.systemui.statusbar.notification.InstantAppNotifier</item>
 diff --git a/packages/SystemUI/res/values/lineage_config.xml b/packages/SystemUI/res/values/lineage_config.xml
-index b17044b1bcc..6554fd54f11 100644
+index 68545928294..6554fd54f11 100644
 --- a/packages/SystemUI/res/values/lineage_config.xml
 +++ b/packages/SystemUI/res/values/lineage_config.xml
-@@ -15,10 +15,6 @@
+@@ -15,9 +15,6 @@
       limitations under the License.
  -->
  <resources>
 -    <!-- Color of the FOD view -->
--    <color name="config_fodColor">#00ff00</color>
 -    <color name="config_fodColorBackground">#20000000</color>
 -
      <!-- Max visible notification icons -->
@@ -344,10 +330,10 @@ index bace9324ac9..1db2e32b8cd 100644
      }
  
 diff --git a/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java b/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
-index 4f644784974..8e5f128143d 100644
+index ae24461b416..df0c313a099 100644
 --- a/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
 +++ b/packages/SystemUI/src/com/android/keyguard/KeyguardUpdateMonitor.java
-@@ -106,8 +106,6 @@ import com.android.systemui.util.RingerModeTracker;
+@@ -108,8 +108,6 @@ import com.android.systemui.util.RingerModeTracker;
  
  import com.google.android.collect.Lists;
  
@@ -356,7 +342,7 @@ index 4f644784974..8e5f128143d 100644
  import java.io.FileDescriptor;
  import java.io.PrintWriter;
  import java.lang.ref.WeakReference;
-@@ -312,7 +310,6 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
+@@ -317,7 +315,6 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
      };
  
      private final Handler mHandler;
@@ -364,7 +350,7 @@ index 4f644784974..8e5f128143d 100644
  
      private final Observer<Integer> mRingerModeObserver = new Observer<Integer>() {
          @Override
-@@ -1696,9 +1693,6 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
+@@ -1729,9 +1726,6 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
              }
          };
  
@@ -374,7 +360,7 @@ index 4f644784974..8e5f128143d 100644
          // Since device can't be un-provisioned, we only need to register a content observer
          // to update mDeviceProvisioned when we are...
          if (!mDeviceProvisioned) {
-@@ -1862,8 +1856,7 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
+@@ -1900,8 +1894,7 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener, Dumpab
              return;
          }
          mHandler.removeCallbacks(mRetryFingerprintAuthentication);
@@ -385,7 +371,7 @@ index 4f644784974..8e5f128143d 100644
                  || mFingerprintRunningState == BIOMETRIC_STATE_CANCELLING_RESTARTING;
          if (runningOrRestarting && !shouldListenForFingerprint) {
 diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/AuthBiometricFingerprintView.java b/packages/SystemUI/src/com/android/systemui/biometrics/AuthBiometricFingerprintView.java
-index c2671733ba0..45ee4ad9ae5 100644
+index 1a86a999135..9e070045033 100644
 --- a/packages/SystemUI/src/com/android/systemui/biometrics/AuthBiometricFingerprintView.java
 +++ b/packages/SystemUI/src/com/android/systemui/biometrics/AuthBiometricFingerprintView.java
 @@ -22,7 +22,6 @@ import android.graphics.drawable.AnimatedVectorDrawable;
@@ -396,7 +382,7 @@ index c2671733ba0..45ee4ad9ae5 100644
  
  import com.android.systemui.R;
  
-@@ -77,18 +76,6 @@ public class AuthBiometricFingerprintView extends AuthBiometricView {
+@@ -82,18 +81,6 @@ public class AuthBiometricFingerprintView extends AuthBiometricView {
          showTouchSensorString();
      }
  
@@ -416,18 +402,10 @@ index c2671733ba0..45ee4ad9ae5 100644
          mIndicatorView.setText(R.string.fingerprint_dialog_touch_sensor);
          mIndicatorView.setTextColor(mTextColorHint);
 diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/AuthBiometricView.java b/packages/SystemUI/src/com/android/systemui/biometrics/AuthBiometricView.java
-index dfcf59decc0..f9c6d32d1d1 100644
+index f16533ec440..a4fb63466d1 100644
 --- a/packages/SystemUI/src/com/android/systemui/biometrics/AuthBiometricView.java
 +++ b/packages/SystemUI/src/com/android/systemui/biometrics/AuthBiometricView.java
-@@ -24,7 +24,6 @@ import android.annotation.IntDef;
- import android.annotation.NonNull;
- import android.annotation.Nullable;
- import android.content.Context;
--import android.content.pm.PackageManager;
- import android.hardware.biometrics.BiometricPrompt;
- import android.os.Bundle;
- import android.os.Handler;
-@@ -41,12 +40,8 @@ import android.widget.LinearLayout;
+@@ -46,12 +46,8 @@ import android.widget.LinearLayout;
  import android.widget.TextView;
  
  import com.android.internal.annotations.VisibleForTesting;
@@ -440,27 +418,25 @@ index dfcf59decc0..f9c6d32d1d1 100644
  import java.lang.annotation.Retention;
  import java.lang.annotation.RetentionPolicy;
  import java.util.ArrayList;
-@@ -191,8 +186,6 @@ public abstract class AuthBiometricView extends LinearLayout {
+@@ -197,8 +193,6 @@ public abstract class AuthBiometricView extends LinearLayout {
      protected boolean mDialogSizeAnimating;
      protected Bundle mSavedState;
  
 -    protected boolean mHasFod;
 -
-     /**
-      * Delay after authentication is confirmed, before the dialog should be animated away.
-      */
-@@ -255,10 +248,6 @@ public abstract class AuthBiometricView extends LinearLayout {
+     protected final PackageManager mPackageManager;
  
+     /**
+@@ -270,8 +264,6 @@ public abstract class AuthBiometricView extends LinearLayout {
          mAccessibilityManager = context.getSystemService(AccessibilityManager.class);
  
--        PackageManager packageManager = context.getPackageManager();
--        mHasFod = packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT) &&
--                packageManager.hasSystemFeature(LineageContextConstants.Features.FOD);
--
+         mPackageManager = context.getPackageManager();
+-        mHasFod = mPackageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT) &&
+-                mPackageManager.hasSystemFeature(LineageContextConstants.Features.FOD);
+ 
          mResetErrorRunnable = () -> {
              updateState(getStateForAfterError());
-             handleResetAfterError();
-@@ -714,22 +703,9 @@ public abstract class AuthBiometricView extends LinearLayout {
+@@ -761,22 +753,9 @@ public abstract class AuthBiometricView extends LinearLayout {
              final View child = getChildAt(i);
  
              if (child.getId() == R.id.biometric_icon) {
@@ -488,10 +464,10 @@ index dfcf59decc0..f9c6d32d1d1 100644
                          MeasureSpec.makeMeasureSpec(newWidth, MeasureSpec.EXACTLY),
 diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/FODCircleView.java b/packages/SystemUI/src/com/android/systemui/biometrics/FODCircleView.java
 deleted file mode 100644
-index 10b304bb843..00000000000
+index 2b2ea38d99d..00000000000
 --- a/packages/SystemUI/src/com/android/systemui/biometrics/FODCircleView.java
 +++ /dev/null
-@@ -1,555 +0,0 @@
+@@ -1,742 +0,0 @@
 -/**
 - * Copyright (C) 2019-2020 The LineageOS Project
 - *
@@ -512,6 +488,7 @@ index 10b304bb843..00000000000
 -
 -import android.app.admin.DevicePolicyManager;
 -import android.content.Context;
+-import android.content.Intent;
 -import android.content.res.Configuration;
 -import android.content.res.Resources;
 -import android.graphics.Canvas;
@@ -520,25 +497,32 @@ index 10b304bb843..00000000000
 -import android.graphics.PixelFormat;
 -import android.graphics.Point;
 -import android.hardware.biometrics.BiometricSourceType;
+-import android.net.Uri;
 -import android.os.Handler;
+-import android.os.UserHandle;
 -import android.os.Looper;
+-import android.os.PowerManager;
 -import android.os.RemoteException;
+-import android.os.SystemClock;
 -import android.provider.Settings;
 -import android.util.DisplayMetrics;
 -import android.view.Display;
 -import android.view.Gravity;
+-import android.view.LayoutInflater;
 -import android.view.MotionEvent;
 -import android.view.Surface;
 -import android.view.View;
 -import android.view.WindowManager;
 -import android.widget.ImageView;
 -
+-import com.android.internal.util.crdroid.Utils;
 -import com.android.internal.widget.LockPatternUtils;
 -import com.android.keyguard.KeyguardSecurityModel.SecurityMode;
 -import com.android.keyguard.KeyguardUpdateMonitor;
 -import com.android.keyguard.KeyguardUpdateMonitorCallback;
 -import com.android.systemui.Dependency;
 -import com.android.systemui.R;
+-import com.android.systemui.tuner.TunerService;
 -
 -import vendor.lineage.biometrics.fingerprint.inscreen.V1_0.IFingerprintInscreen;
 -import vendor.lineage.biometrics.fingerprint.inscreen.V1_0.IFingerprintInscreenCallback;
@@ -547,8 +531,22 @@ index 10b304bb843..00000000000
 -import java.util.Timer;
 -import java.util.TimerTask;
 -
--public class FODCircleView extends ImageView {
+-public class FODCircleView extends ImageView implements TunerService.Tunable {
 -    private static final int FADE_ANIM_DURATION = 125;
+-    private static final String DOZE_INTENT = "com.android.systemui.doze.pulse";
+-
+-    private static final String FOD_GESTURE =
+-            "system:" + Settings.System.FOD_GESTURE;
+-    private static final String DOZE_ENABLED =
+-            Settings.Secure.DOZE_ENABLED;
+-    private static final String FOD_ANIM =
+-            "system:" + Settings.System.FOD_ANIM;
+-    private static final String FOD_RECOGNIZING_ANIMATION =
+-            "system:" + Settings.System.FOD_RECOGNIZING_ANIMATION;
+-    private static final String FOD_ICON =
+-            "system:" + Settings.System.FOD_ICON;
+-    private static final String FOD_COLOR =
+-            "system:" + Settings.System.FOD_COLOR;
 -
 -    private final int mPositionX;
 -    private final int mPositionY;
@@ -557,7 +555,6 @@ index 10b304bb843..00000000000
 -    private final int mNavigationBarSize;
 -    private final boolean mShouldBoostBrightness;
 -    private final Paint mPaintFingerprintBackground = new Paint();
--    private final Paint mPaintFingerprint = new Paint();
 -    private final WindowManager.LayoutParams mParams = new WindowManager.LayoutParams();
 -    private final WindowManager.LayoutParams mPressedParams = new WindowManager.LayoutParams();
 -    private final WindowManager mWindowManager;
@@ -565,6 +562,7 @@ index 10b304bb843..00000000000
 -    private IFingerprintInscreen mFingerprintInscreenDaemon;
 -
 -    private int mDreamingOffsetX;
+-    private int mColorBackground;
 -    private int mDreamingOffsetY;
 -
 -    private boolean mFading;
@@ -575,6 +573,15 @@ index 10b304bb843..00000000000
 -    private boolean mIsKeyguard;
 -    private boolean mTouchedOutside;
 -
+-    private boolean mDozeEnabled;
+-    private boolean mDozeEnabledByDefault;
+-    private boolean mFodGestureEnable;
+-    private boolean mPressPending;
+-    private boolean mScreenTurnedOn;
+-
+-    private PowerManager mPowerManager;
+-    private PowerManager.WakeLock mWakeLock;
+-
 -    private Handler mHandler;
 -
 -    private final ImageView mPressedView;
@@ -583,16 +590,76 @@ index 10b304bb843..00000000000
 -
 -    private Timer mBurnInProtectionTimer;
 -
+-    private FODAnimation mFODAnimation;
+-    private boolean mIsRecognizingAnimEnabled;
+-    private int mFodAnim = 0;
+-
+-    private int mSelectedIcon;
+-    private final int[] ICON_STYLES = {
+-        R.drawable.fod_icon_default,
+-        R.drawable.fod_icon_default_0,
+-        R.drawable.fod_icon_default_1,
+-        R.drawable.fod_icon_default_2,
+-        R.drawable.fod_icon_default_3,
+-        R.drawable.fod_icon_default_4,
+-        R.drawable.fod_icon_default_5,
+-        R.drawable.fod_icon_arc_reactor,
+-        R.drawable.fod_icon_cpt_america_flat,
+-        R.drawable.fod_icon_cpt_america_flat_gray,
+-        R.drawable.fod_icon_dragon_black_flat,
+-        R.drawable.fod_icon_cr1,
+-        R.drawable.fod_icon_glow_circle,
+-        R.drawable.fod_icon_neon_arc,
+-        R.drawable.fod_icon_neon_arc_gray,
+-        R.drawable.fod_icon_neon_circle_pink,
+-        R.drawable.fod_icon_neon_triangle,
+-        R.drawable.fod_icon_paint_splash_circle,
+-        R.drawable.fod_icon_rainbow_horn,
+-        R.drawable.fod_icon_shooky,
+-        R.drawable.fod_icon_spiral_blue,
+-        R.drawable.fod_icon_sun_metro,
+-        R.drawable.fod_icon_scratch_pink_blue,
+-        R.drawable.fod_icon_scratch_red_blue,
+-        R.drawable.fod_icon_fire_ice_ouroboros,
+-        R.drawable.fod_icon_light,
+-        R.drawable.fod_icon_gxzw,
+-        R.drawable.fod_icon_transparent
+-    };
+-
+-    private int mDefaultPressedColor;
+-    private int mPressedColor;
+-    private final int[] PRESSED_COLOR = {
+-        R.drawable.fod_icon_pressed,
+-        R.drawable.fod_icon_pressed_cyan,
+-        R.drawable.fod_icon_pressed_green,
+-        R.drawable.fod_icon_pressed_yellow,
+-        R.drawable.fod_icon_pressed_light_yellow
+-    };
+-
 -    private IFingerprintInscreenCallback mFingerprintInscreenCallback =
 -            new IFingerprintInscreenCallback.Stub() {
 -        @Override
 -        public void onFingerDown() {
--            mHandler.post(() -> showCircle());
+-            if (mFodGestureEnable && !mScreenTurnedOn) {
+-                if (mDozeEnabled) {
+-                    mHandler.post(() -> mContext.sendBroadcast(new Intent(DOZE_INTENT)));
+-                } else {
+-                    mWakeLock.acquire(3000);
+-                    mHandler.post(() -> mPowerManager.wakeUp(SystemClock.uptimeMillis(),
+-                        PowerManager.WAKE_REASON_GESTURE, FODCircleView.class.getSimpleName()));
+-                }
+-                mPressPending = true;
+-            } else {
+-                mHandler.post(() -> showCircle());
+-            }
 -        }
 -
 -        @Override
 -        public void onFingerUp() {
 -            mHandler.post(() -> hideCircle());
+-            if (mPressPending) {
+-                mPressPending = false;
+-            }
 -        }
 -    };
 -
@@ -614,6 +681,8 @@ index 10b304bb843..00000000000
 -                BiometricSourceType biometricSourceType) {
 -            if (biometricSourceType == BiometricSourceType.FINGERPRINT) {
 -                mIsBiometricRunning = running;
+-                if (!mIsBiometricRunning)
+-                    hide();
 -            }
 -        }
 -
@@ -622,11 +691,9 @@ index 10b304bb843..00000000000
 -            mIsDreaming = dreaming;
 -            updateAlpha();
 -
--            if (mIsKeyguard && mUpdateMonitor.isFingerprintDetectionRunning()) {
+-            if (mIsKeyguard && mIsBiometricRunning) {
 -                show();
 -                updateAlpha();
--            } else {
--                hide();
 -            }
 -
 -            if (dreaming) {
@@ -645,46 +712,64 @@ index 10b304bb843..00000000000
 -            } else {
 -                updateAlpha();
 -            }
+-            if (mFODAnimation != null && mIsRecognizingAnimEnabled) {
+-                mFODAnimation.setAnimationKeyguard(mIsKeyguard);
+-            }
 -        }
 -
 -        @Override
 -        public void onKeyguardBouncerChanged(boolean isBouncer) {
 -            mIsBouncer = isBouncer;
--            if (mUpdateMonitor.isFingerprintDetectionRunning()) {
+-            if (mIsBiometricRunning) {
 -                if (isPinOrPattern(mUpdateMonitor.getCurrentUser()) || !isBouncer) {
 -                    show();
 -                } else {
 -                    hide();
 -                }
--            } else {
--                hide();
 -            }
 -        }
 -
 -        @Override
 -        public void onScreenTurnedOff() {
--            hide();
+-            mScreenTurnedOn = false;
+-            if (!mFodGestureEnable) {
+-                hide();
+-            } else {
+-                hideCircle();
+-            }
 -        }
 -
 -        @Override
 -        public void onStartedWakingUp() {
--            if (mUpdateMonitor.isFingerprintDetectionRunning()) {
+-            if (mIsBiometricRunning) {
 -                show();
 -            }
 -        }
 -
 -        @Override
 -        public void onScreenTurnedOn() {
--            if (mUpdateMonitor.isFingerprintDetectionRunning()) {
--                show();
+-            if (mIsBiometricRunning) {
+-                if (!mFodGestureEnable) {
+-                    show();
+-                } else if (mPressPending) {
+-                    mHandler.post(() -> showCircle());
+-                    mPressPending = false;
+-                }
+-            }    
+-            mScreenTurnedOn = true;
+-        }
+-
+-        @Override
+-        public void onBiometricHelp(int msgId, String helpString,
+-                BiometricSourceType biometricSourceType) {
+-            if (msgId == -1 && mFODAnimation != null && mIsRecognizingAnimEnabled) { // Auth error
+-                mHandler.post(() -> mFODAnimation.hideFODanimation());
 -            }
 -        }
 -    };
 -
 -    public FODCircleView(Context context) {
 -        super(context);
--
--        setScaleType(ScaleType.CENTER);
 -
 -        IFingerprintInscreen daemon = getFingerprintInScreenDaemon();
 -        if (daemon == null) {
@@ -702,11 +787,15 @@ index 10b304bb843..00000000000
 -
 -        Resources res = context.getResources();
 -
--        mPaintFingerprint.setColor(res.getColor(R.color.config_fodColor));
--        mPaintFingerprint.setAntiAlias(true);
--
--        mPaintFingerprintBackground.setColor(res.getColor(R.color.config_fodColorBackground));
+-        mColorBackground = res.getColor(R.color.config_fodColorBackground);
+-        mDefaultPressedColor = res.getInteger(com.android.internal.R.
+-             integer.config_fod_pressed_color);
+-        mPaintFingerprintBackground.setColor(mColorBackground);
 -        mPaintFingerprintBackground.setAntiAlias(true);
+-
+-        mPowerManager = context.getSystemService(PowerManager.class);
+-        mWakeLock = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+-                 FODCircleView.class.getSimpleName());
 -
 -        mWindowManager = context.getSystemService(WindowManager.class);
 -
@@ -721,13 +810,14 @@ index 10b304bb843..00000000000
 -        mParams.format = PixelFormat.TRANSLUCENT;
 -
 -        mParams.packageName = "android";
--        mParams.type = WindowManager.LayoutParams.TYPE_DISPLAY_OVERLAY;
+-        mParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_FINGERPRINT;
 -        mParams.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
 -                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
 -                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
 -        mParams.gravity = Gravity.TOP | Gravity.LEFT;
 -
 -        mPressedParams.copyFrom(mParams);
+-        mPressedParams.type = WindowManager.LayoutParams.TYPE_SYSTEM_FINGERPRINT_HIGH_LIGHT;
 -        mPressedParams.flags |= WindowManager.LayoutParams.FLAG_DIM_BEHIND |
 -                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
 -
@@ -738,22 +828,76 @@ index 10b304bb843..00000000000
 -            @Override
 -            protected void onDraw(Canvas canvas) {
 -                if (mIsCircleShowing) {
--                    canvas.drawCircle(mSize / 2, mSize / 2, mSize / 2.0f, mPaintFingerprint);
+-                    setImageResource(PRESSED_COLOR[mPressedColor]);
 -                }
 -                super.onDraw(canvas);
 -            }
 -        };
--        mPressedView.setImageResource(R.drawable.fod_icon_pressed);
 -
 -        mWindowManager.addView(this, mParams);
 -
--        updatePosition();
 -        hide();
 -
 -        mLockPatternUtils = new LockPatternUtils(mContext);
 -
 -        mUpdateMonitor = Dependency.get(KeyguardUpdateMonitor.class);
 -        mUpdateMonitor.registerCallback(mMonitorCallback);
+-
+-        boolean isFodAnimationAvailable = Utils.isPackageInstalled(context,
+-                                    context.getResources().getString(
+-                                    com.android.internal.R.string.config_fodAnimationPackage));
+-        if (isFodAnimationAvailable) {
+-            mFODAnimation = new FODAnimation(context, mPositionX, mPositionY);
+-        }
+-
+-        mDozeEnabledByDefault = mContext.getResources().getBoolean(
+-                    com.android.internal.R.bool.config_doze_enabled_by_default);
+-
+-        Dependency.get(TunerService.class).addTunable(this,
+-                FOD_GESTURE,
+-                DOZE_ENABLED,
+-                FOD_ANIM,
+-                FOD_RECOGNIZING_ANIMATION,
+-                FOD_ICON,
+-                FOD_COLOR);
+-    }
+-
+-    @Override
+-    public void onTuningChanged(String key, String newValue) {
+-        switch (key) {
+-            case FOD_GESTURE:
+-                mFodGestureEnable =
+-                        TunerService.parseIntegerSwitch(newValue, false);
+-                break;
+-            case DOZE_ENABLED:
+-                mDozeEnabled =
+-                        TunerService.parseIntegerSwitch(newValue, mDozeEnabledByDefault);
+-                break;
+-            case FOD_ANIM:
+-                mFodAnim =
+-                        TunerService.parseInteger(newValue, 0);
+-                if (mFODAnimation != null) {
+-                    mFODAnimation.update(mIsRecognizingAnimEnabled, mFodAnim);
+-                }
+-                break;
+-            case FOD_RECOGNIZING_ANIMATION:
+-                mIsRecognizingAnimEnabled =
+-                        TunerService.parseIntegerSwitch(newValue, false);
+-                if (mFODAnimation != null) {
+-                    mFODAnimation.update(mIsRecognizingAnimEnabled, mFodAnim);
+-                }
+-                break;
+-            case FOD_ICON:
+-                mSelectedIcon =
+-                        TunerService.parseInteger(newValue, 0);
+-                break;
+-            case FOD_COLOR:
+-                mPressedColor =
+-                        TunerService.parseInteger(newValue, mDefaultPressedColor);
+-                break;
+-            default:
+-                break;
+-        }
 -    }
 -
 -    @Override
@@ -787,6 +931,9 @@ index 10b304bb843..00000000000
 -            return true;
 -        }
 -
+-        if (mFODAnimation != null && mIsRecognizingAnimEnabled) {
+-            mHandler.post(() -> mFODAnimation.hideFODanimation());
+-        }
 -        return false;
 -    }
 -
@@ -858,6 +1005,10 @@ index 10b304bb843..00000000000
 -        setDim(true);
 -        dispatchPress();
 -
+-        if (mFODAnimation != null && mIsRecognizingAnimEnabled) {
+-            mHandler.post(() -> mFODAnimation.showFODanimation());
+-        }
+-
 -        setImageDrawable(null);
 -        invalidate();
 -    }
@@ -865,17 +1016,26 @@ index 10b304bb843..00000000000
 -    public void hideCircle() {
 -        mIsCircleShowing = false;
 -
--        setImageResource(R.drawable.fod_icon_default);
+-        setImageResource(ICON_STYLES[mSelectedIcon]);
 -        invalidate();
 -
 -        dispatchRelease();
 -        setDim(false);
 -
+-        if (mFODAnimation != null && mIsRecognizingAnimEnabled) {
+-            mHandler.post(() -> mFODAnimation.hideFODanimation());
+-        }
+-
 -        setKeepScreenOn(false);
 -    }
 -
 -    public void show() {
--        if (!mUpdateMonitor.isScreenOn()) {
+-        if (mUpdateMonitor.userNeedsStrongAuth()) {
+-            // Keyguard requires strong authentication (not biometrics)
+-            return;
+-        }
+-
+-        if (!mUpdateMonitor.isScreenOn() && !mFodGestureEnable) {
 -            // Keyguard is shown just after screen turning off
 -            return;
 -        }
@@ -967,6 +1127,9 @@ index 10b304bb843..00000000000
 -        if (mIsDreaming) {
 -            mParams.x += mDreamingOffsetX;
 -            mParams.y += mDreamingOffsetY;
+-            if (mFODAnimation != null && mIsRecognizingAnimEnabled) {
+-                mFODAnimation.updateParams(mParams.y);
+-            }
 -        }
 -
 -        mWindowManager.updateViewLayout(this, mParams);
@@ -1049,10 +1212,10 @@ index 10b304bb843..00000000000
 -}
 diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/FODCircleViewImpl.java b/packages/SystemUI/src/com/android/systemui/biometrics/FODCircleViewImpl.java
 deleted file mode 100644
-index 8f8f255d370..00000000000
+index 2c923571905..00000000000
 --- a/packages/SystemUI/src/com/android/systemui/biometrics/FODCircleViewImpl.java
 +++ /dev/null
-@@ -1,132 +0,0 @@
+@@ -1,174 +0,0 @@
 -/**
 - * Copyright (C) 2019 The Android Open Source Project
 - *
@@ -1073,8 +1236,16 @@ index 8f8f255d370..00000000000
 -
 -import android.content.Context;
 -import android.content.pm.PackageManager;
+-import android.content.res.Resources;
+-import android.hardware.display.ColorDisplayManager;
+-import android.os.Handler;
+-import android.os.SystemProperties;
+-import android.provider.Settings;
 -import android.util.Slog;
 -import android.view.View;
+-
+-import com.android.internal.R;
+-import com.android.internal.util.crdroid.FodUtils;
 -
 -import com.android.systemui.SystemUI;
 -import com.android.systemui.biometrics.FODCircleViewImplCallback;
@@ -1097,6 +1268,9 @@ index 8f8f255d370..00000000000
 -    private final ArrayList<WeakReference<FODCircleViewImplCallback>>
 -            mCallbacks = new ArrayList<>();
 -    private final CommandQueue mCommandQueue;
+-    private boolean mDisableNightMode;
+-    private boolean mNightModeActive;
+-    private int mAutoModeState;
 -
 -    private boolean mIsFODVisible;
 -
@@ -1110,7 +1284,7 @@ index 8f8f255d370..00000000000
 -    public void start() {
 -        PackageManager packageManager = mContext.getPackageManager();
 -        if (!packageManager.hasSystemFeature(PackageManager.FEATURE_FINGERPRINT) ||
--                !packageManager.hasSystemFeature(LineageContextConstants.Features.FOD)) {
+-                !(packageManager.hasSystemFeature(LineageContextConstants.Features.FOD) || FodUtils.hasFodSupport(mContext))) {
 -            return;
 -        }
 -        mCommandQueue.addCallback(this);
@@ -1125,6 +1299,7 @@ index 8f8f255d370..00000000000
 -        } catch (RuntimeException e) {
 -            Slog.e(TAG, "Failed to initialize FODCircleView", e);
 -        }
+-        mDisableNightMode = mContext.getResources().getBoolean(R.bool.disable_fod_night_light);
 -    }
 -
 -    @Override
@@ -1137,20 +1312,33 @@ index 8f8f255d370..00000000000
 -                }
 -            }
 -            mIsFODVisible = true;
+-            if (mDisableNightMode && isNightLightEnabled()) {
+-                disableNightMode();
+-            }
 -            mFodCircleView.show();
 -        }
 -    }
 -
+-    private boolean isNightLightEnabled() {
+-       return Settings.System.getInt(mContext.getContentResolver(),
+-                Settings.System.FOD_NIGHT_LIGHT, 1) == 1;
+-    }
+-    
 -    @Override
 -    public void hideInDisplayFingerprintView() {
 -        if (mFodCircleView != null) {
--            for (int i = 0; i < mCallbacks.size(); i++) {
--                FODCircleViewImplCallback cb = mCallbacks.get(i).get();
--                if (cb != null) {
--                    cb.onFODStatusChange(false);
+-            if (!mDisableNightMode) {
+-                for (int i = 0; i < mCallbacks.size(); i++) {
+-                    FODCircleViewImplCallback cb = mCallbacks.get(i).get();
+-                    if (cb != null) {
+-                        cb.onFODStatusChange(false);
+-                    }
 -                }
 -            }
 -            mIsFODVisible = false;
+-            if (mDisableNightMode && isNightLightEnabled()) {
+-                setNightMode(mNightModeActive, mAutoModeState);
+-            }
 -            mFodCircleView.hide();
 -        }
 -    }
@@ -1183,6 +1371,23 @@ index 8f8f255d370..00000000000
 -    private void sendUpdates(FODCircleViewImplCallback callback) {
 -        callback.onFODStart();
 -        callback.onFODStatusChange(mIsFODVisible);
+-    }
+-
+-   private void disableNightMode() {
+-        ColorDisplayManager colorDisplayManager = mContext.getSystemService(ColorDisplayManager.class);
+-        mAutoModeState = colorDisplayManager.getNightDisplayAutoMode();
+-        mNightModeActive = colorDisplayManager.isNightDisplayActivated();
+-        colorDisplayManager.setNightDisplayActivated(false);
+-    }
+-
+-    private void setNightMode(boolean activated, int autoMode) {
+-        ColorDisplayManager colorDisplayManager = mContext.getSystemService(ColorDisplayManager.class);
+-        colorDisplayManager.setNightDisplayAutoMode(0);
+-        if (autoMode == 0) {
+-            colorDisplayManager.setNightDisplayActivated(activated);
+-        } else if (autoMode == 1 || autoMode == 2) {
+-            colorDisplayManager.setNightDisplayAutoMode(autoMode);
+-        }
 -    }
 -}
 diff --git a/packages/SystemUI/src/com/android/systemui/biometrics/FODCircleViewImplCallback.java b/packages/SystemUI/src/com/android/systemui/biometrics/FODCircleViewImplCallback.java
@@ -1242,7 +1447,7 @@ index a0a2e6f0dd6..413a522bccd 100644
      @Binds
      @IntoMap
 diff --git a/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardViewMediator.java b/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardViewMediator.java
-index 3eb5de9289e..0c939020780 100644
+index 85f4f435c20..2a0ce3ecc77 100644
 --- a/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardViewMediator.java
 +++ b/packages/SystemUI/src/com/android/systemui/keyguard/KeyguardViewMediator.java
 @@ -38,7 +38,6 @@ import android.content.ContentResolver;
@@ -1253,7 +1458,7 @@ index 3eb5de9289e..0c939020780 100644
  import android.content.pm.UserInfo;
  import android.hardware.biometrics.BiometricSourceType;
  import android.media.AudioAttributes;
-@@ -102,7 +101,6 @@ import com.android.systemui.statusbar.phone.StatusBar;
+@@ -103,7 +102,6 @@ import com.android.systemui.statusbar.phone.StatusBar;
  import com.android.systemui.util.DeviceConfigProxy;
  import com.android.systemui.util.InjectionInflationController;
  
@@ -1261,7 +1466,7 @@ index 3eb5de9289e..0c939020780 100644
  import lineageos.app.Profile;
  import lineageos.app.ProfileManager;
  
-@@ -387,8 +385,6 @@ public class KeyguardViewMediator extends SystemUI implements Dumpable {
+@@ -388,8 +386,6 @@ public class KeyguardViewMediator extends SystemUI implements Dumpable {
      private IKeyguardDrawnCallback mDrawnCallback;
      private CharSequence mCustomMessage;
  
@@ -1270,16 +1475,20 @@ index 3eb5de9289e..0c939020780 100644
      private final DeviceConfig.OnPropertiesChangedListener mOnPropertiesChangedListener =
              new DeviceConfig.OnPropertiesChangedListener() {
              @Override
-@@ -757,8 +753,6 @@ public class KeyguardViewMediator extends SystemUI implements Dumpable {
+@@ -758,12 +754,6 @@ public class KeyguardViewMediator extends SystemUI implements Dumpable {
                  QuickStepContract.isGesturalMode(navigationModeController.addListener(mode -> {
                      mInGestureNavigationMode = QuickStepContract.isGesturalMode(mode);
                  }));
 -        PackageManager packageManager = context.getPackageManager();
--        mHasFod = packageManager.hasSystemFeature(LineageContextConstants.Features.FOD);
+-        if (packageManager.hasSystemFeature(LineageContextConstants.Features.FOD) || FodUtils.hasFodSupport(context)){
+-            mHasFod = true;
+-        }else{
+-            mHasFod = false;
+-        }
      }
  
      public void userActivity() {
-@@ -891,9 +885,7 @@ public class KeyguardViewMediator extends SystemUI implements Dumpable {
+@@ -896,9 +886,7 @@ public class KeyguardViewMediator extends SystemUI implements Dumpable {
              // explicitly DO NOT want to call
              // mKeyguardViewControllerLazy.get().setKeyguardGoingAwayState(false)
              // here, since that will mess with the device lock state.
@@ -1291,7 +1500,7 @@ index 3eb5de9289e..0c939020780 100644
              // Lock immediately based on setting if secure (user has a pin/pattern/password).
              // This also "locks" the device when not secure to provide easy access to the
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/CommandQueue.java b/packages/SystemUI/src/com/android/systemui/statusbar/CommandQueue.java
-index 5f3875701e4..39b6aa1a360 100644
+index 13d2dc256ed..96dae9c8ad9 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/CommandQueue.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/CommandQueue.java
 @@ -126,8 +126,6 @@ public class CommandQueue extends IStatusBar.Stub implements CallbackController<
@@ -1301,18 +1510,18 @@ index 5f3875701e4..39b6aa1a360 100644
 -    private static final int MSG_SHOW_IN_DISPLAY_FINGERPRINT_VIEW  = 57 << MSG_SHIFT;
 -    private static final int MSG_HIDE_IN_DISPLAY_FINGERPRINT_VIEW  = 58 << MSG_SHIFT;
      private static final int MSG_SET_BLOCKED_GESTURAL_NAVIGATION   = 59 << MSG_SHIFT;
- 
-     public static final int FLAG_EXCLUDE_NONE = 0;
-@@ -271,8 +269,6 @@ public class CommandQueue extends IStatusBar.Stub implements CallbackController<
+     private static final int MSG_TOGGLE_CAMERA_FLASH               = 60 << MSG_SHIFT;
+     private static final int MSG_SCREEN_PINNING_STATE_CHANGED      = 61 << MSG_SHIFT;
+@@ -274,8 +272,6 @@ public class CommandQueue extends IStatusBar.Stub implements CallbackController<
          default void onBiometricHelp(String message) { }
          default void onBiometricError(int modality, int error, int vendorCode) { }
          default void hideAuthenticationDialog() { }
 -        default void showInDisplayFingerprintView() { }
 -        default void hideInDisplayFingerprintView() { }
          default void setBlockedGesturalNavigation(boolean blocked) {}
+         default void toggleCameraFlash() { }
  
-         /**
-@@ -862,20 +858,6 @@ public class CommandQueue extends IStatusBar.Stub implements CallbackController<
+@@ -870,20 +866,6 @@ public class CommandQueue extends IStatusBar.Stub implements CallbackController<
          }
      }
  
@@ -1333,7 +1542,7 @@ index 5f3875701e4..39b6aa1a360 100644
      @Override
      public void setBlockedGesturalNavigation(boolean blocked) {
          synchronized (mLock) {
-@@ -1335,16 +1317,6 @@ public class CommandQueue extends IStatusBar.Stub implements CallbackController<
+@@ -1369,16 +1351,6 @@ public class CommandQueue extends IStatusBar.Stub implements CallbackController<
                          callbacks.suppressAmbientDisplay((boolean) msg.obj);
                      }
                      break;
@@ -1350,6 +1559,97 @@ index 5f3875701e4..39b6aa1a360 100644
                  case MSG_SET_BLOCKED_GESTURAL_NAVIGATION:
                      for (int i = 0; i < mCallbacks.size(); i++) {
                          mCallbacks.get(i).setBlockedGesturalNavigation((Boolean) msg.obj);
+diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java b/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
+index ba21cd2fce5..0f37798effa 100644
+--- a/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
++++ b/packages/SystemUI/src/com/android/systemui/statusbar/KeyguardIndicationController.java
+@@ -84,7 +84,6 @@ import javax.inject.Inject;
+ import javax.inject.Singleton;
+ 
+ import lineageos.app.LineageContextConstants;
+-import vendor.lineage.biometrics.fingerprint.inscreen.V1_0.IFingerprintInscreen;
+ 
+ /**
+  * Controls the indications and error messages shown on the Keyguard
+@@ -117,7 +116,6 @@ public class KeyguardIndicationController implements StateListener,
+     private KeyguardIndicationTextView mDisclosure;
+     private LottieAnimationView mChargingIndicationView;
+     private int mChargingIndication = 1;
+-    private int mFODPositionY = 0;
+     private final IBatteryStats mBatteryInfo;
+     private final SettableWakeLock mWakeLock;
+     private final DockManager mDockManager;
+@@ -228,17 +226,6 @@ public class KeyguardIndicationController implements StateListener,
+         mChargingIndicationView = (LottieAnimationView) indicationArea.findViewById(
+                 R.id.charging_indication);
+         updateChargingIndicationStyle();
+-        if (hasActiveInDisplayFp()) {
+-            try {
+-                IFingerprintInscreen daemon = IFingerprintInscreen.getService();
+-                mFODPositionY = daemon.getPositionY();
+-            } catch (RemoteException e) {
+-                // do nothing
+-            }
+-            if (mFODPositionY <= 0) {
+-                mFODPositionY = 0;
+-            }
+-        }
+         mDisclosure = indicationArea.findViewById(R.id.keyguard_indication_enterprise_disclosure);
+         mDisclosureMaxAlpha = mDisclosure.getAlpha();
+         updateIndication(false /* animate */);
+@@ -590,37 +577,6 @@ public class KeyguardIndicationController implements StateListener,
+ 
+     private void updateChargingIndication() {
+         if (mChargingIndication > 0 && !mDozing && mBatteryPresent && mPowerPluggedIn) {
+-            if (hasActiveInDisplayFp()) {
+-                if (mFODPositionY != 0) {
+-                    // Get screen height
+-                    WindowManager windowManager = mContext.getSystemService(WindowManager.class);
+-                    Display defaultDisplay = windowManager.getDefaultDisplay();
+-                    Point size = new Point();
+-                    defaultDisplay.getRealSize(size);
+-                    int screenHeight = size.y;
+-                    // Correct FOD position if cutout is hidden
+-                    int statusbarHeight = mContext.getResources().getDimensionPixelSize(
+-                            com.android.internal.R.dimen.status_bar_height_portrait);
+-                    boolean cutoutMasked = mContext.getResources().getBoolean(
+-                            com.android.internal.R.bool.config_maskMainBuiltInDisplayCutout);
+-                    int fodPositionY = mFODPositionY;
+-                    if (cutoutMasked) {
+-                        fodPositionY = mFODPositionY - statusbarHeight;
+-                    }
+-                    // Get indication text height
+-                    int textViewHeight = mTextView.getMeasuredHeight();
+-                    // Get bottom margin height
+-                    int marginBottom = mContext.getResources().getDimensionPixelSize(
+-                            R.dimen.keyguard_indication_margin_bottom_fingerprint_in_display);
+-                    // Calculate charging indication margin
+-                    int animationMargin = (screenHeight - fodPositionY) - (textViewHeight + marginBottom) + 10;
+-                    // Set position of charging indication
+-                    ViewGroup.MarginLayoutParams params =
+-                            (ViewGroup.MarginLayoutParams) mChargingIndicationView.getLayoutParams();
+-                    params.setMargins(0, 0, 0, animationMargin);
+-                    mChargingIndicationView.setLayoutParams(params);
+-                }
+-            }
+             mChargingIndicationView.setVisibility(View.VISIBLE);
+             mChargingIndicationView.playAnimation();
+         } else {
+@@ -628,14 +584,6 @@ public class KeyguardIndicationController implements StateListener,
+         }
+     }
+ 
+-    private boolean hasActiveInDisplayFp() {
+-        PackageManager packageManager = mContext.getPackageManager();
+-        boolean hasInDisplayFingerprint = packageManager.hasSystemFeature(LineageContextConstants.Features.FOD);
+-        int userId = KeyguardUpdateMonitor.getCurrentUser();
+-        FingerprintManager fpm = (FingerprintManager) mContext.getSystemService(Context.FINGERPRINT_SERVICE);
+-        return hasInDisplayFingerprint && fpm.getEnrolledFingerprints(userId).size() > 0;
+-    }
+-
+     // animates textView - textView moves up and bounces down
+     private void animateText(KeyguardIndicationTextView textView, String indication) {
+         int yTranslation = mContext.getResources().getInteger(
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/notification/ActivityLaunchAnimator.java b/packages/SystemUI/src/com/android/systemui/statusbar/notification/ActivityLaunchAnimator.java
 index 1e1655256b1..382715a3fb7 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/notification/ActivityLaunchAnimator.java
@@ -1421,27 +1721,27 @@ index 1e1655256b1..382715a3fb7 100644
                  mCallback.onExpandAnimationFinished(mIsFullScreenLaunch);
                  applyParamsToNotification(null);
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBar.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBar.java
-index 8aca0846a67..b55d6a55bca 100644
+index fa2121ecde6..9f431398d42 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBar.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBar.java
-@@ -76,7 +76,6 @@ import android.content.res.Configuration;
- import android.graphics.Point;
- import android.graphics.PointF;
+@@ -79,7 +79,6 @@ import android.graphics.PointF;
+ import android.graphics.Rect;
  import android.hardware.display.DisplayManager;
+ import android.graphics.drawable.GradientDrawable;
 -import android.hardware.fingerprint.IFingerprintService;
  import android.media.AudioAttributes;
+ import android.media.MediaMetadata;
  import android.metrics.LogMaker;
- import android.net.Uri;
-@@ -151,8 +150,6 @@ import com.android.systemui.R;
- import com.android.systemui.SystemUI;
+@@ -168,8 +167,6 @@ import com.android.systemui.SystemUI;
  import com.android.systemui.SystemUIFactory;
+ import com.android.systemui.UiOffloadThread;
  import com.android.systemui.assist.AssistManager;
 -import com.android.systemui.biometrics.FODCircleViewImpl;
 -import com.android.systemui.biometrics.FODCircleViewImplCallback;
  import com.android.systemui.broadcast.BroadcastDispatcher;
  import com.android.systemui.bubbles.BubbleController;
  import com.android.systemui.charging.WirelessChargingAnimation;
-@@ -241,7 +238,6 @@ import lineageos.providers.LineageSettings;
+@@ -264,7 +261,6 @@ import lineageos.providers.LineageSettings;
  import java.io.FileDescriptor;
  import java.io.PrintWriter;
  import java.io.StringWriter;
@@ -1449,7 +1749,7 @@ index 8aca0846a67..b55d6a55bca 100644
  import java.util.Map;
  import java.util.Optional;
  import java.util.concurrent.Executor;
-@@ -637,33 +633,6 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -724,33 +720,6 @@ public class StatusBar extends SystemUI implements DemoMode,
          }
      };
  
@@ -1480,10 +1780,10 @@ index 8aca0846a67..b55d6a55bca 100644
 -                }
 -            };
 -
+     private FlashlightController mFlashlightController;
      private KeyguardUserSwitcher mKeyguardUserSwitcher;
      private final UserSwitcherController mUserSwitcherController;
-     private final NetworkController mNetworkController;
-@@ -692,7 +661,6 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -780,7 +749,6 @@ public class StatusBar extends SystemUI implements DemoMode,
              new KeyguardUpdateMonitorCallback() {
                  @Override
                  public void onDreamingStateChanged(boolean dreaming) {
@@ -1491,7 +1791,7 @@ index 8aca0846a67..b55d6a55bca 100644
                      if (dreaming) {
                          maybeEscalateHeadsUp();
                      }
-@@ -717,7 +685,6 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -805,7 +773,6 @@ public class StatusBar extends SystemUI implements DemoMode,
      private Lazy<NotificationShadeDepthController> mNotificationShadeDepthControllerLazy;
      private final BubbleController mBubbleController;
      private final BubbleController.BubbleExpandListener mBubbleExpandListener;
@@ -1499,7 +1799,7 @@ index 8aca0846a67..b55d6a55bca 100644
  
      private ActivityIntentHelper mActivityIntentHelper;
  
-@@ -807,8 +774,7 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -906,8 +873,7 @@ public class StatusBar extends SystemUI implements DemoMode,
              DismissCallbackRegistry dismissCallbackRegistry,
              Lazy<NotificationShadeDepthController> notificationShadeDepthControllerLazy,
              StatusBarTouchableRegionManager statusBarTouchableRegionManager,
@@ -1509,7 +1809,7 @@ index 8aca0846a67..b55d6a55bca 100644
          super(context);
          mNotificationsController = notificationsController;
          mLightBarController = lightBarController;
-@@ -886,7 +852,6 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -985,7 +951,6 @@ public class StatusBar extends SystemUI implements DemoMode,
          mIconPolicy = phoneStatusBarPolicy;
          mDismissCallbackRegistry = dismissCallbackRegistry;
          mTunerService = tunerService;
@@ -1517,7 +1817,7 @@ index 8aca0846a67..b55d6a55bca 100644
  
          mBubbleExpandListener =
                  (isExpanding, key) -> {
-@@ -896,9 +861,6 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -995,9 +960,6 @@ public class StatusBar extends SystemUI implements DemoMode,
  
  
          DateTimeView.setReceiverHandler(timeTickHandler);
@@ -1527,7 +1827,7 @@ index 8aca0846a67..b55d6a55bca 100644
      }
  
      @Override
-@@ -1097,8 +1059,6 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -1211,8 +1173,6 @@ public class StatusBar extends SystemUI implements DemoMode,
                          }
                      }
                  }, OverlayPlugin.class, true /* Allow multiple plugins */);
@@ -1536,7 +1836,7 @@ index 8aca0846a67..b55d6a55bca 100644
      }
  
      // ================================================================================
-@@ -1407,8 +1367,7 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -1527,8 +1487,7 @@ public class StatusBar extends SystemUI implements DemoMode,
          mActivityLaunchAnimator = new ActivityLaunchAnimator(
                  mNotificationShadeWindowViewController, this, mNotificationPanelViewController,
                  mNotificationShadeDepthControllerLazy.get(),
@@ -1546,7 +1846,7 @@ index 8aca0846a67..b55d6a55bca 100644
  
          // TODO: inject this.
          mPresenter = new StatusBarNotificationPresenter(mContext, mNotificationPanelViewController,
-@@ -1923,12 +1882,6 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -2056,12 +2015,6 @@ public class StatusBar extends SystemUI implements DemoMode,
              clearNotificationEffects();
          }
  
@@ -1559,7 +1859,7 @@ index 8aca0846a67..b55d6a55bca 100644
          if (!isExpanded) {
              mRemoteInputManager.onPanelCollapsed();
          }
-@@ -2650,11 +2603,6 @@ public class StatusBar extends SystemUI implements DemoMode,
+@@ -2831,11 +2784,6 @@ public class StatusBar extends SystemUI implements DemoMode,
      @Override
      public void onRecentsAnimationStateChanged(boolean running) {
          setInteracting(StatusBarManager.WINDOW_NAVIGATION_BAR, running);
@@ -1570,12 +1870,11 @@ index 8aca0846a67..b55d6a55bca 100644
 -        }
      }
  
-     protected BarTransitions getStatusBarTransitions() {
-@@ -4680,22 +4628,4 @@ public class StatusBar extends SystemUI implements DemoMode,
-     public void suppressAmbientDisplay(boolean suppressed) {
+     void checkBarModes() {
+@@ -5194,24 +5142,6 @@ public class StatusBar extends SystemUI implements DemoMode,
          mDozeServiceHost.setDozeSuppressed(suppressed);
      }
--
+ 
 -    private String getForegroundPackageNameAndClass() {
 -        List<ActivityManager.RunningTaskInfo> tasks = mActivityManager.getRunningTasks(1);
 -        if (tasks.isEmpty()) {
@@ -1593,12 +1892,15 @@ index 8aca0846a67..b55d6a55bca 100644
 -    public int getFodHeight(boolean includeDecor) {
 -        return mFODCircleViewImpl.getHeight(includeDecor);
 -    }
- }
+-
+     private void setBlackStatusBar(boolean enable) {
+         if (mNotificationShadeWindowViewController == null ||
+             mNotificationShadeWindowViewController.getBarTransitions() == null) return;
 diff --git a/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarKeyguardViewManager.java b/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarKeyguardViewManager.java
-index 68b83fb68d5..b354e45bfde 100644
+index 739b4dbe3ed..ab820702d19 100644
 --- a/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarKeyguardViewManager.java
 +++ b/packages/SystemUI/src/com/android/systemui/statusbar/phone/StatusBarKeyguardViewManager.java
-@@ -115,7 +115,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
+@@ -127,7 +127,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
  
          @Override
          public void onStartingToShow() {
@@ -1606,7 +1908,7 @@ index 68b83fb68d5..b354e45bfde 100644
              updateLockIcon();
          }
  
-@@ -163,7 +162,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
+@@ -175,7 +174,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
      protected boolean mLastShowing;
      protected boolean mLastOccluded;
      private boolean mLastBouncerShowing;
@@ -1614,7 +1916,7 @@ index 68b83fb68d5..b354e45bfde 100644
      private boolean mLastBouncerDismissible;
      protected boolean mLastRemoteInputActive;
      private boolean mLastDozing;
-@@ -810,7 +808,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
+@@ -846,7 +844,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
          boolean showing = mShowing;
          boolean occluded = mOccluded;
          boolean bouncerShowing = mBouncer.isShowing();
@@ -1622,7 +1924,7 @@ index 68b83fb68d5..b354e45bfde 100644
          boolean bouncerDismissible = !mBouncer.isFullscreenBouncer();
          boolean remoteInputActive = mRemoteInputActive;
  
-@@ -839,11 +836,8 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
+@@ -888,11 +885,8 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
          if ((showing && !occluded) != (mLastShowing && !mLastOccluded) || mFirstUpdate) {
              mKeyguardUpdateManager.onKeyguardVisibilityChanged(showing && !occluded);
          }
@@ -1636,7 +1938,7 @@ index 68b83fb68d5..b354e45bfde 100644
          }
  
          mFirstUpdate = false;
-@@ -851,7 +845,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
+@@ -900,7 +894,6 @@ public class StatusBarKeyguardViewManager implements RemoteInputController.Callb
          mLastGlobalActionsVisible = mGlobalActionsVisible;
          mLastOccluded = occluded;
          mLastBouncerShowing = bouncerShowing;
@@ -1762,10 +2064,10 @@ index 5bb4d272eae..70369732fea 100644
      }
  
 diff --git a/services/core/java/com/android/server/biometrics/fingerprint/FingerprintService.java b/services/core/java/com/android/server/biometrics/fingerprint/FingerprintService.java
-index 5b51aa6e72a..a90fee6788a 100644
+index c0ce72e1438..03877e0e2b2 100644
 --- a/services/core/java/com/android/server/biometrics/fingerprint/FingerprintService.java
 +++ b/services/core/java/com/android/server/biometrics/fingerprint/FingerprintService.java
-@@ -80,17 +80,12 @@ import org.json.JSONArray;
+@@ -81,17 +81,12 @@ import org.json.JSONArray;
  import org.json.JSONException;
  import org.json.JSONObject;
  
@@ -1783,7 +2085,7 @@ index 5b51aa6e72a..a90fee6788a 100644
  import java.util.concurrent.CopyOnWriteArrayList;
  
  /**
-@@ -112,9 +107,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -113,9 +108,6 @@ public class FingerprintService extends BiometricServiceBase {
      private static final long FAIL_LOCKOUT_TIMEOUT_MS = 30 * 1000;
      private static final String KEY_LOCKOUT_RESET_USER = "lockout_reset_user";
  
@@ -1793,7 +2095,7 @@ index 5b51aa6e72a..a90fee6788a 100644
      private final class ResetFailedAttemptsForUserRunnable implements Runnable {
          @Override
          public void run() {
-@@ -649,7 +641,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -650,7 +642,6 @@ public class FingerprintService extends BiometricServiceBase {
  
      @GuardedBy("this")
      private IBiometricsFingerprint mDaemon;
@@ -1801,7 +2103,7 @@ index 5b51aa6e72a..a90fee6788a 100644
      private final SparseBooleanArray mTimedLockoutCleared;
      private final SparseIntArray mFailedAttempts;
      private final AlarmManager mAlarmManager;
-@@ -671,21 +662,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -672,21 +663,6 @@ public class FingerprintService extends BiometricServiceBase {
                          new Fingerprint(getBiometricUtils().getUniqueName(getContext(), groupId),
                                  groupId, fingerId, deviceId);
                  FingerprintService.super.handleEnrollResult(fingerprint, remaining);
@@ -1823,7 +2125,7 @@ index 5b51aa6e72a..a90fee6788a 100644
              });
          }
  
-@@ -697,16 +673,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -698,16 +674,6 @@ public class FingerprintService extends BiometricServiceBase {
          @Override
          public void onAcquired_2_2(long deviceId, int acquiredInfo, int vendorCode) {
              mHandler.post(() -> {
@@ -1840,7 +2142,7 @@ index 5b51aa6e72a..a90fee6788a 100644
                  FingerprintService.super.handleAcquired(deviceId, acquiredInfo, vendorCode);
              });
          }
-@@ -726,29 +692,12 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -727,29 +693,12 @@ public class FingerprintService extends BiometricServiceBase {
  
                  final Fingerprint fp = new Fingerprint("", groupId, fingerId, deviceId);
                  FingerprintService.super.handleAuthenticated(authenticated, fp, token);
@@ -1870,7 +2172,7 @@ index 5b51aa6e72a..a90fee6788a 100644
                  FingerprintService.super.handleError(deviceId, error, vendorCode);
                  // TODO: this chunk of code should be common to all biometric services
                  if (error == BiometricConstants.BIOMETRIC_ERROR_HW_UNAVAILABLE) {
-@@ -796,21 +745,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -797,21 +746,6 @@ public class FingerprintService extends BiometricServiceBase {
                  Slog.w(TAG, "authenticate(): no fingerprint HAL!");
                  return ERROR_ESRCH;
              }
@@ -1892,7 +2194,7 @@ index 5b51aa6e72a..a90fee6788a 100644
              return daemon.authenticate(operationId, groupId);
          }
  
-@@ -821,13 +755,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -822,13 +756,6 @@ public class FingerprintService extends BiometricServiceBase {
                  Slog.w(TAG, "cancel(): no fingerprint HAL!");
                  return ERROR_ESRCH;
              }
@@ -1906,7 +2208,7 @@ index 5b51aa6e72a..a90fee6788a 100644
              return daemon.cancel();
          }
  
-@@ -859,21 +786,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -860,21 +787,6 @@ public class FingerprintService extends BiometricServiceBase {
                  Slog.w(TAG, "enroll(): no fingerprint HAL!");
                  return ERROR_ESRCH;
              }
@@ -1928,17 +2230,21 @@ index 5b51aa6e72a..a90fee6788a 100644
              return daemon.enroll(cryptoToken, groupId, timeout);
          }
  
-@@ -893,9 +805,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -894,13 +806,6 @@ public class FingerprintService extends BiometricServiceBase {
          context.registerReceiver(mLockoutReceiver, new IntentFilter(getLockoutResetIntent()),
                  getLockoutBroadcastPermission(), null /* handler */);
          mLockPatternUtils = new LockPatternUtils(context);
 -
 -        PackageManager packageManager = context.getPackageManager();
--        mHasFod = packageManager.hasSystemFeature(LineageContextConstants.Features.FOD);
+-        if (packageManager.hasSystemFeature(LineageContextConstants.Features.FOD) || FodUtils.hasFodSupport(context)){
+-            mHasFod = true;
+-        }else{
+-            mHasFod = false;
+-        }
      }
  
      @Override
-@@ -980,7 +889,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -985,7 +890,6 @@ public class FingerprintService extends BiometricServiceBase {
  
                      daemon.setActiveGroup(userId, fpDir.getAbsolutePath());
                      mCurrentUserId = userId;
@@ -1946,7 +2252,7 @@ index 5b51aa6e72a..a90fee6788a 100644
                  }
                  mAuthenticatorIds.put(userId,
                          hasEnrolledBiometrics(userId) ? daemon.getAuthenticatorId() : 0L);
-@@ -1118,26 +1026,6 @@ public class FingerprintService extends BiometricServiceBase {
+@@ -1123,26 +1027,6 @@ public class FingerprintService extends BiometricServiceBase {
          return mDaemon;
      }
  
@@ -1974,10 +2280,10 @@ index 5b51aa6e72a..a90fee6788a 100644
          IBiometricsFingerprint daemon = getFingerprintDaemon();
          if (daemon == null) {
 diff --git a/services/core/java/com/android/server/statusbar/StatusBarManagerService.java b/services/core/java/com/android/server/statusbar/StatusBarManagerService.java
-index 2412209452b..13b9508a9c8 100644
+index c071105908a..602140c1425 100644
 --- a/services/core/java/com/android/server/statusbar/StatusBarManagerService.java
 +++ b/services/core/java/com/android/server/statusbar/StatusBarManagerService.java
-@@ -747,28 +747,6 @@ public class StatusBarManagerService extends IStatusBarService.Stub implements D
+@@ -757,28 +757,6 @@ public class StatusBarManagerService extends IStatusBarService.Stub implements D
          return mTracingEnabled;
      }
  
