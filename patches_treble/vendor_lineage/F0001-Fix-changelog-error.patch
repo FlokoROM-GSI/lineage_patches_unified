@@ -1,6 +1,6 @@
-From ed8d14bbae31acc609fd609b6c1c99522b9d804b Mon Sep 17 00:00:00 2001
+From 7e88a345807ae7a15e0282eb9ca28aade985c2e0 Mon Sep 17 00:00:00 2001
 From: AndroPlus <hosigumayuugi@gmail.com>
-Date: Mon, 26 Jul 2021 19:08:42 +0900
+Date: Thu, 12 Aug 2021 15:11:01 +0900
 Subject: [PATCH 1/1] Fix changelog error
 
 ---
@@ -8,7 +8,7 @@ Subject: [PATCH 1/1] Fix changelog error
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/build/tools/changelog.sh b/build/tools/changelog.sh
-index a1d14947..48c67b9f 100755
+index a1d14947..6481d6fc 100755
 --- a/build/tools/changelog.sh
 +++ b/build/tools/changelog.sh
 @@ -17,7 +17,7 @@
@@ -16,7 +16,7 @@ index a1d14947..48c67b9f 100755
  Changelog=Changelog.txt
  
 -DEVICE=$(echo $TARGET_PRODUCT | sed -e 's/lineage_//g')
-+DEVICE=$(echo $TARGET_PRODUCT | sed -e 's/treble_/phhgsi_/g' | sed -e 's/_bvN/_ab/g')
++DEVICE=$(echo $TARGET_PRODUCT | sed -e 's/lineage_//g' | sed -e 's/treble_/phhgsi_/g' | sed -e 's/_a[a-z][A-Z]/_a/g' | sed -e 's/_b[a-z][A-Z]/_ab/g')
  
  if [ -f $Changelog ];
  then
