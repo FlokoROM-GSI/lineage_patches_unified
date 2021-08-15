@@ -1,0 +1,71 @@
+From 3140aa5fe537ec6c1701997aed70d44d291d6039 Mon Sep 17 00:00:00 2001
+From: Mirenk <minikmwinsea@gmail.com>
+Date: Sun, 15 Aug 2021 09:52:05 +0900
+Subject: [PATCH 1/1] GamingMode: Add ADB toggle [1/2]
+
+---
+ core/java/android/provider/Settings.java         |  6 ++++++
+ .../util/crdroid/GamingModeController.java       | 16 ++++++++++++++++
+ 2 files changed, 22 insertions(+)
+
+diff --git a/core/java/android/provider/Settings.java b/core/java/android/provider/Settings.java
+index 669dc0683a6..c78a2b8490c 100755
+--- a/core/java/android/provider/Settings.java
++++ b/core/java/android/provider/Settings.java
+@@ -5000,6 +5000,12 @@ public final class Settings {
+          */
+         public static final String STATUSBAR_BATTERY_BAR_STYLE = "statusbar_battery_bar_style";
+ 
++        /**
++         * Whether to disable ADB in gaming mode
++         * @hide
++         */
++        public static final String GAMING_MODE_ADB_TOGGLE = "gaming_mode_adb_toggle";
++
+         /**
+          * @hide
+          */
+diff --git a/core/java/com/android/internal/util/crdroid/GamingModeController.java b/core/java/com/android/internal/util/crdroid/GamingModeController.java
+index bb968666679..1e503c26408 100644
+--- a/core/java/com/android/internal/util/crdroid/GamingModeController.java
++++ b/core/java/com/android/internal/util/crdroid/GamingModeController.java
+@@ -75,6 +75,7 @@ public class GamingModeController {
+     private static int mZenState;
+     private static int mHwKeysState;
+     private static int mAdaptiveBrightness;
++    private static int mAdbState;
+ 
+     public static final String GAMING_MODE_TURN_OFF = "android.intent.action.GAMING_MODE_TURN_OFF";
+     public static final String GAMING_MODE_TURN_ON = "android.intent.action.GAMING_MODE_TURN_ON";
+@@ -259,6 +260,15 @@ public class GamingModeController {
+             Settings.System.putInt(mContext.getContentResolver(),
+                 Settings.System.HARDWARE_KEYS_DISABLE, 1);
+         }
++        // ADB
++        boolean disableAdb = Settings.System.getInt(mContext.getContentResolver(),
++                    Settings.System.GAMING_MODE_ADB_TOGGLE, 0) == 1;
++        if (disableAdb) {
++            mAdbState = Settings.Global.getInt(mContext.getContentResolver(),
++                              Settings.Global.ADB_ENABLED, 0);
++            Settings.Global.putInt(mContext.getContentResolver(),
++                Settings.Global.ADB_ENABLED, 0);
++        }
+ 
+         // Ringer mode (0: Off, 1: Vibrate, 2:DND: 3:Silent)
+         int ringerMode = Settings.System.getInt(mContext.getContentResolver(),
+@@ -302,6 +312,12 @@ public class GamingModeController {
+             Settings.System.putInt(mContext.getContentResolver(),
+                 Settings.System.HARDWARE_KEYS_DISABLE, mHwKeysState);
+         }
++        boolean disableAdb = Settings.System.getInt(mContext.getContentResolver(),
++                    Settings.System.GAMING_MODE_ADB_TOGGLE, 0) == 1;
++        if (disableAdb) {
++            Settings.Global.putInt(mContext.getContentResolver(),
++                Settings.Global.ADB_ENABLED, mAdbState);
++        }
+         int ringerMode = Settings.System.getInt(mContext.getContentResolver(),
+                  Settings.System.GAMING_MODE_RINGER_MODE, 0);
+         if (ringerMode != 0 && (mRingerState != getRingerModeInternal() ||
+-- 
+2.25.1
+
