@@ -1,14 +1,13 @@
-From a24b28b8cf08839ea0052c2bb37696b9d24ba8bc Mon Sep 17 00:00:00 2001
-From: Pierre-Hugues Husson <phh@phh.me>
-Date: Mon, 26 Oct 2020 23:16:30 +0100
-Subject: [PATCH 09/12] Apply associated display for joysticks
+From 429a5c511788af044da16d96d0b76c359a31a6cb Mon Sep 17 00:00:00 2001
+From: AndroPlus <hosigumayuugi@gmail.com>
+Date: Sun, 20 Feb 2022 16:22:40 +0900
+Subject: [PATCH 1/1] Apply associated display for joysticks
 
-Change-Id: I5f6c237e6bf53312aff3dc02a46ce1c779063203
 ---
  .../reader/mapper/JoystickInputMapper.cpp     |   4 +-
  .../reader/mapper/JoystickInputMapper.h       |   2 +
- .../inputflinger/tests/InputReader_test.cpp   | 100 ++++++++++++++++++
- 3 files changed, 105 insertions(+), 1 deletion(-)
+ .../inputflinger/tests/InputReader_test.cpp   | 101 ++++++++++++++++++
+ 3 files changed, 106 insertions(+), 1 deletion(-)
 
 diff --git a/services/inputflinger/reader/mapper/JoystickInputMapper.cpp b/services/inputflinger/reader/mapper/JoystickInputMapper.cpp
 index 030a84672..929bfc5f9 100644
@@ -46,7 +45,7 @@ index 823a096d6..cf864ba75 100644
  
  } // namespace android
 diff --git a/services/inputflinger/tests/InputReader_test.cpp b/services/inputflinger/tests/InputReader_test.cpp
-index c457a1525..c9b704993 100644
+index e9bb169d6..0f83dc1c5 100644
 --- a/services/inputflinger/tests/InputReader_test.cpp
 +++ b/services/inputflinger/tests/InputReader_test.cpp
 @@ -20,6 +20,7 @@
@@ -57,7 +56,7 @@ index c457a1525..c9b704993 100644
  #include <KeyboardInputMapper.h>
  #include <MultiTouchInputMapper.h>
  #include <SingleTouchInputMapper.h>
-@@ -252,6 +253,10 @@ public:
+@@ -260,6 +261,10 @@ public:
          mConfig.portAssociations.insert({inputPort, displayPort});
      }
  
@@ -68,10 +67,10 @@ index c457a1525..c9b704993 100644
      void addDisabledDevice(int32_t deviceId) { mConfig.disabledDevices.insert(deviceId); }
  
      void removeDisabledDevice(int32_t deviceId) { mConfig.disabledDevices.erase(deviceId); }
-@@ -7336,4 +7341,99 @@ TEST_F(MultiTouchInputMapperTest_SurfaceRange, Viewports_SurfaceRange_270) {
-     constexpr int32_t yExpected = (x + 1) - DISPLAY_WIDTH / 4;
+@@ -7496,6 +7501,102 @@ TEST_F(MultiTouchInputMapperTest_SurfaceRange, Viewports_SurfaceRange) {
      processPositionAndVerify(mapper, x - 1, y, x + 1, y, xExpected, yExpected);
  }
+ 
 +class JoystickInputMapperTest : public InputMapperTest {
 +    protected:
 +    const std::string PRIMARY_UNIQUE_ID = "local:0";
@@ -167,7 +166,10 @@ index c457a1525..c9b704993 100644
 +    // And check we're back to focus-based
 +    ASSERT_EQ(args.displayId, ADISPLAY_ID_NONE);
 +}
- } // namespace android
++
+ TEST_F(MultiTouchInputMapperTest_SurfaceRange, Viewports_SurfaceRange_90) {
+     addConfigurationProperty("touch.deviceType", "touchScreen");
+     prepareDisplay(DISPLAY_ORIENTATION_0);
 -- 
 2.25.1
 
